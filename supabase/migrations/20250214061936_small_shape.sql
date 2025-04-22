@@ -31,7 +31,6 @@ CREATE TABLE IF NOT EXISTS profiles (
   interests text[],
   created_at timestamptz DEFAULT now()
 );
-
 -- Create friendships table
 CREATE TABLE IF NOT EXISTS friendships (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

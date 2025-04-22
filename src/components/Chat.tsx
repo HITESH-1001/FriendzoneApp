@@ -87,14 +87,15 @@ const Chat = ({ friend, onClose }: { friend: { id: string; full_name: string }; 
         );
   
         // ✅ If the message was marked as "seen", refresh the messages
-        if (updatedMsg.seen) {
-          fetchMessages();
-        }
+        // if (updatedMsg.seen) {
+        //   fetchMessages();
+        // }
       })
       .subscribe();
   
     return () => {
-      supabase.removeChannel(subscription);
+     // supabase.removeChannel(subscription);
+      subscription.unsubscribe();
     };
   }, [currentUser, friend.id]);
   
@@ -117,30 +118,59 @@ const Chat = ({ friend, onClose }: { friend: { id: string; full_name: string }; 
 
 
 
+  // const sendMessage = async () => {
+  //   if (!newMessage.trim() || !currentUser) return;
+  
+  //   try {
+  //     const { error } = await supabase.from("messages").insert([
+  //       {
+  //         sender_id: currentUser,
+  //         receiver_id: friend.id,
+  //         text: newMessage.trim(),
+  //         seen: false,
+  //       },
+  //     ]);
+  
+  //     if (error) throw error;
+  
+  //     setNewMessage(""); // Clear input only after message is sent
+  //     inputRef.current?.focus(); // Keep input focused
+  
+  //   } catch (error) {
+  //     console.error("Error sending message:", error);
+  //   }
+  // };
+  
   const sendMessage = async () => {
     if (!newMessage.trim() || !currentUser) return;
   
+    const messageToSend = {
+      id: crypto.randomUUID(), // temporary id
+      sender_id: currentUser,
+      receiver_id: friend.id,
+      text: newMessage.trim(),
+      seen: false,
+      created_at: new Date().toISOString(),
+    };
+  
+    // 🔥 Optimistically add to UI
+    setMessages((prev) => [...prev, messageToSend]);
+  
+    setNewMessage("");
+    inputRef.current?.focus();
+    scrollToBottom();
+  
     try {
-      const { error } = await supabase.from("messages").insert([
-        {
-          sender_id: currentUser,
-          receiver_id: friend.id,
-          text: newMessage.trim(),
-          seen: false,
-        },
-      ]);
+      const { error } = await supabase.from("messages").insert([messageToSend]);
   
       if (error) throw error;
   
-      setNewMessage(""); // Clear input only after message is sent
-      inputRef.current?.focus(); // Keep input focused
-  
+      // Replaced by real-time update anyway, no need to re-fetch
     } catch (error) {
       console.error("Error sending message:", error);
+      // Optional: remove the message or show error
     }
   };
-  
-
   // Handle Enter key press
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter" && !event.shiftKey) {
